@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package test_server;
+
+service TestServer {
+    rpc CallServer(CallRequest) returns (CallResponse) {}
+}
+
+message CallRequest {
+    string callerName = 1;
+    string callerId = 2;
+}
+
+message CallResponse {
+    string message = 1;
+}

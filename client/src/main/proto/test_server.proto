@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "github.cjmcgraw.dnstester";
+option java_outer_classname = "TestServerProto";
+
+package test_server;
+
+service TestServer {
+    rpc CallServer(CallRequest) returns (CallResponse) {}
+}
+
+message CallRequest {
+    string callerName = 1;
+    string callerId = 2;
+}
+
+message CallResponse {
+    string message = 1;
+}
