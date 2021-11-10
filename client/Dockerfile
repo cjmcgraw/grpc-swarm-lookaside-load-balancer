@@ -3,9 +3,7 @@ WORKDIR /app
 COPY client/gradle gradle
 COPY client/build.gradle .
 COPY client/settings.gradle .
-COPY client/src .
-RUN --mount=type=cache,target=/root/.gradle \
-    gradle clean jar
+COPY client/src src
+RUN gradle clean compileJava
 RUN ls -alR .
-ENTRYPOINT [ "tail", "-f", "/dev/null" ]
-#ENTRYPOINT [ "java", "-cp", "main/java", "github.cjmcgraw.dnstester.DnsTesterClient" ]
+ENTRYPOINT [ "gradle", "run" ]

@@ -19,24 +19,24 @@ repositories {
 sourceCompatibility = 1.17
 targetCompatibility = 1.17
 
-// IMPORTANT: You probably want the non-SNAPSHOT version of gRPC. Make sure you
-// are looking at a tagged version of the example and not "master"!
-
-// Feel free to delete the comment at the next line. It is just for safely
-// updating the version in our release process.
 def grpcVersion = '1.42.0' // CURRENT_GRPC_VERSION
 def protobufVersion = '3.19.1'
 def protocVersion = protobufVersion
 
 dependencies {
+    implementation "io.grpc:grpc-api:${grpcVersion}"
+    implementation "io.grpc:grpc-core:${grpcVersion}"
+    implementation "io.grpc:grpc-context:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "org.apache.logging.log4j:log4j-api:2.14.1"
+    implementation "org.apache.logging.log4j:log4j-core:2.14.1"
     compileOnly "org.apache.tomcat:annotations-api:6.0.53"
 
     // examples/advanced need this for JsonFormat
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
 
-    runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
 
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
     testImplementation "junit:junit:4.12"
@@ -73,7 +73,7 @@ tasks.withType( JavaCompile ).configureEach {
 jar {
     manifest {
         attributes(
-            'Main-Class': 'github.cjmcgraw.dnstester.DnsTesterClient'
+                'Main-Class': 'github.cjmcgraw.dnstester.DnsTesterClient'
         )
     }
 }

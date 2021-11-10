@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
 
-  test_server_1:
+  test-server-1:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
@@ -15,7 +15,7 @@ services:
       #GRPC_TRACE: 
       TCP_USER_TIMEOUT: 250
 
-  test_server_2:
+  test-server-2:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
@@ -26,7 +26,7 @@ services:
       #GRPC_TRACE: tcp,http
       TCP_USER_TIMEOUT: 250
 
-  test_server_3:
+  test-server-3:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
@@ -48,3 +48,7 @@ services:
     build:
       context: ./
       dockerfile: ./client/Dockerfile
+    volumes:
+      - ./client:/app/
+    depends_on:
+      - test-server-1

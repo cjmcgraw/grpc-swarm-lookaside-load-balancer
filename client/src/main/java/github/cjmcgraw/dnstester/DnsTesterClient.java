@@ -1,19 +1,24 @@
 package github.cjmcgraw.dnstester;
 
+import github.cjmcgraw.dnstester.nameresolvers.MyCustomNameResolverProvider;
 import io.grpc.*;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import github.cjmcgraw.dnstester.TestServerGrpc;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class DnsTesterClient {
+  private static final Logger log = LogManager.getLogger(DnsTesterClient.class);
   public static void main(String[] args) throws Exception {
-    System.out.println("Starting script");
+    log.info("Starting script");
     ManagedChannel channel = ManagedChannelBuilder
-        .forTarget("localhost:50051")
+        .forTarget("my-custom://localhost")
+        .defaultLoadBalancingPolicy("round-robin")
         .usePlaintext()
         .build();
 
@@ -26,7 +31,7 @@ public class DnsTesterClient {
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
-    System.out.println("Finished script");
+    log.info("Finished script");
   }
 
   static public class DnsTester {
@@ -51,7 +56,7 @@ public class DnsTesterClient {
         currentStub = currentStub
                 .withDeadlineAfter(10, TimeUnit.MILLISECONDS);
       }
-      System.out.println(state);
+      log.info(state);
       CallRequest request = CallRequest.newBuilder()
               .setCallerId("123")
               .setCallerName(callerName)
@@ -60,7 +65,7 @@ public class DnsTesterClient {
       CallResponse response = currentStub.callServer(request);
       String output = response.getMessage();
       long end = System.nanoTime();
-      System.out.println("request took " + (end - start) * 1e-6 + " ms");
+      log.info("request took " + (end - start) * 1e-6 + " ms");
       return output;
     }
   }
