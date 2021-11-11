@@ -37,11 +37,11 @@ services:
       #GRPC_TRACE: tcp,http
       TCP_USER_TIMEOUT: 250
 
-  lookaside=load-balancer:
-    build: ./lookaside_load_balancer
+  lookaside-load-balancer:
+    build: ./lookaside-load-balancer
     volumes:
-      - ./lookaside_load_balancer/response.json:/var/sites/webapp/webapp/response.json
-      - ./lookaside_load_balancer/nginx.conf:/etc/nginx/nginx.conf
+      - ./lookaside-load-balancer/response.json:/var/sites/webapp/webapp/response.json
+      - ./lookaside-load-balancer/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - 80:80
 
