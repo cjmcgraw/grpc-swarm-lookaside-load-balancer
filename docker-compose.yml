@@ -37,7 +37,7 @@ services:
       #GRPC_TRACE: tcp,http
       TCP_USER_TIMEOUT: 250
 
-  lookaside_load_balancer:
+  lookaside=load-balancer:
     build: ./lookaside_load_balancer
     volumes:
       - ./lookaside_load_balancer/response.json:/var/sites/webapp/webapp/response.json
@@ -54,3 +54,6 @@ services:
       - ./client:/app/
     depends_on:
       - test-server-1
+      - test-server-2
+      - test-server-3
+      - lookaside-load-balancer
