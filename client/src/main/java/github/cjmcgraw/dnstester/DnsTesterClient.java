@@ -21,13 +21,14 @@ public class DnsTesterClient {
             .getDefaultRegistry()
             .register(new MyCustomNameResolverProvider());
 
+    String target = System.getenv("_LLB_TARGET");
     ManagedChannel channel = ManagedChannelBuilder
-        .forTarget("my-custom://localhost")
-        .defaultLoadBalancingPolicy("round_robin")
-        .executor(mainExecutor)
-        .offloadExecutor(offloadExecutor)
-        .usePlaintext()
-        .build();
+            .forTarget("my-custom://" + target)
+            .defaultLoadBalancingPolicy("round_robin")
+            .executor(mainExecutor)
+            .offloadExecutor(offloadExecutor)
+            .usePlaintext()
+            .build();
 
     DnsTester dnsTester = new DnsTester(channel);
     try {
@@ -57,7 +58,8 @@ public class DnsTesterClient {
 
     public String call(String callerName) throws InterruptedException {
       long start = System.nanoTime();
-      CallRequest request = CallRequest.newBuilder()
+      CallRequest request = CallRequest
+              .newBuilder()
               .setCallerId("123")
               .setCallerName(callerName)
               .build();

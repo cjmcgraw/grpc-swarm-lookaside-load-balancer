@@ -42,14 +42,14 @@ services:
     volumes:
       - ./lookaside-load-balancer/response.json:/var/sites/webapp/webapp/response.json
       - ./lookaside-load-balancer/nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - 80:80
 
 
   client:
     build:
       context: ./
       dockerfile: ./client/Dockerfile
+    environment:
+      _LLB_TARGET: lookaside-load-balancer:80
     volumes:
       - ./client:/app/
     depends_on:
