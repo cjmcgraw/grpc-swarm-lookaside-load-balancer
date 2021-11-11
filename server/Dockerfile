@@ -3,8 +3,7 @@ FROM python:3.10
 RUN mkdir /pip_cache
 WORKDIR /app
 COPY server/requirements.txt .
-RUN --mount=type=cache,target=/pip_cache \
-    pip install \
+RUN pip install \
         --cache-dir /pip_cache \
         -r requirements.txt
 
