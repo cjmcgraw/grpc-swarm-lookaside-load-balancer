@@ -6,10 +6,6 @@ services:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
-    volumes:
-      - ./server:/app/
-    ports:
-      - 50051:50051
     environment:
       GRPC_VERBOSITY: debug
       #GRPC_TRACE: 
@@ -19,8 +15,6 @@ services:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
-    volumes:
-      - ./server:/app/
     environment:
       GRPC_VERBOSITY: debug
       #GRPC_TRACE: tcp,http
@@ -30,8 +24,6 @@ services:
     build:
       context: ./
       dockerfile: ./server/Dockerfile
-    volumes:
-      - ./server:/app/
     environment:
       GRPC_VERBOSITY: debug
       #GRPC_TRACE: tcp,http
