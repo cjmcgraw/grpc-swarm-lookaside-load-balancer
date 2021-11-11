@@ -37,11 +37,13 @@ services:
       #GRPC_TRACE: tcp,http
       TCP_USER_TIMEOUT: 250
 
-  custom_dns_webservice:
-    build: ./custom_dns_webservice
+  lookaside_load_balancer:
+    build: ./lookaside_load_balancer
     volumes:
-      - ./custom_dns_webservice/response.json:/var/sites/webapp/webapp/response.json
-      - ./custom_dns_webservice/nginx.conf:/etc/nginx/nginx.conf
+      - ./lookaside_load_balancer/response.json:/var/sites/webapp/webapp/response.json
+      - ./lookaside_load_balancer/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:80
 
 
   client:

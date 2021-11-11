@@ -15,10 +15,14 @@ import org.apache.logging.log4j.Logger;
 public class DnsTesterClient {
   private static final Logger log = LogManager.getLogger(DnsTesterClient.class);
   public static void main(String[] args) throws Exception {
-    log.info("Starting script");
+    log.error("Starting script");
+    NameResolverRegistry
+            .getDefaultRegistry()
+            .register(new MyCustomNameResolverProvider());
+
     ManagedChannel channel = ManagedChannelBuilder
         .forTarget("my-custom://localhost")
-        .defaultLoadBalancingPolicy("round-robin")
+        .defaultLoadBalancingPolicy("round_robin")
         .usePlaintext()
         .build();
 
@@ -47,26 +51,20 @@ public class DnsTesterClient {
 
     public String call(String callerName) {
       long start = System.nanoTime();
-      ConnectivityState state = channel.getState(true);
-      TestServerGrpc.TestServerBlockingStub currentStub = stub;
-      if (state != ConnectivityState.READY) {
-        currentStub = currentStub
-                .withDeadlineAfter(200, TimeUnit.MILLISECONDS);
-      } else {
-        currentStub = currentStub
-                .withDeadlineAfter(10, TimeUnit.MILLISECONDS);
-      }
-      log.info(state);
       CallRequest request = CallRequest.newBuilder()
               .setCallerId("123")
               .setCallerName(callerName)
               .build();
 
-      CallResponse response = currentStub.callServer(request);
-      String output = response.getMessage();
-      long end = System.nanoTime();
-      log.info("request took " + (end - start) * 1e-6 + " ms");
-      return output;
+      try {
+        CallResponse response = stub.callServer(request);
+        String output = response.getMessage();
+        long end = System.nanoTime();
+        log.info("request took " + (end - start) * 1e-6 + " ms");
+        return output;
+      } catch (Exception e) {
+        return null;
+      }
     }
   }
 }

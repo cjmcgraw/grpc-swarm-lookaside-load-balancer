@@ -6,6 +6,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.Executor;
 
 
 public class MyCustomNameResolverProvider extends NameResolverProvider {
@@ -14,7 +16,7 @@ public class MyCustomNameResolverProvider extends NameResolverProvider {
 
     @Override
     protected boolean isAvailable() {
-        log.info("checking isAvailable");
+        log.error("checking isAvailable");
         return true;
     }
 
@@ -25,12 +27,28 @@ public class MyCustomNameResolverProvider extends NameResolverProvider {
 
     @Override
     public NameResolver newNameResolver(URI targetUri, NameResolver.Args args) {
-        log.info("creating new name resolver");
-        return null;
+        URI actualUri;
+        try {
+            actualUri = new URI(targetUri.toString().replace(SCHEME, "http"));
+        } catch (URISyntaxException exception) {
+            throw new RuntimeException(exception);
+        }
+
+        Executor executor = args.getOffloadExecutor();
+        if (executor == null) {
+            throw new IllegalArgumentException("In order to use the custom name resolver, you must provide an offload executor!");
+        }
+        return new MyCustomNameResolver(
+                actualUri,
+                args.getSynchronizationContext(),
+                args.getServiceConfigParser(),
+                args.getOffloadExecutor()
+        );
     }
 
     @Override
     public String getDefaultScheme() {
+        log.error("getting scheme");
         return SCHEME;
     }
 }

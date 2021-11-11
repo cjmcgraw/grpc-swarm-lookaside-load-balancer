@@ -16,8 +16,8 @@ repositories {
     mavenLocal()
 }
 
-sourceCompatibility = 1.17
-targetCompatibility = 1.17
+sourceCompatibility = 17
+targetCompatibility = 17
 
 def grpcVersion = '1.42.0' // CURRENT_GRPC_VERSION
 def protobufVersion = '3.19.1'
@@ -31,6 +31,10 @@ dependencies {
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "org.apache.logging.log4j:log4j-api:2.14.1"
     implementation "org.apache.logging.log4j:log4j-core:2.14.1"
+    implementation group: 'log4j', name: 'log4j', version: '1.2.17'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.10.4'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.10.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.10.4'
     compileOnly "org.apache.tomcat:annotations-api:6.0.53"
 
     // examples/advanced need this for JsonFormat
@@ -73,7 +77,8 @@ tasks.withType( JavaCompile ).configureEach {
 jar {
     manifest {
         attributes(
-                'Main-Class': 'github.cjmcgraw.dnstester.DnsTesterClient'
+                'Main-Class': 'github.cjmcgraw.dnstester.DnsTesterClient',
+                "Class-Path": configurations.runtimeClasspath.collect { it.absolutePath }.join(' ') + configurations.compileClasspath.collect { it.absolutePath }.join(' ')
         )
     }
 }
