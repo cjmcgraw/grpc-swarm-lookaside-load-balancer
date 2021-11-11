@@ -5,12 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.grpc.EquivalentAddressGroup;
 import io.grpc.NameResolver;
+import io.grpc.Status;
 import io.grpc.SynchronizationContext;
 import io.grpc.netty.shaded.io.netty.util.concurrent.CompleteFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -88,7 +93,7 @@ class MyCustomNameResolver extends NameResolver {
         timeOfLastCache = System.currentTimeMillis();
         pendingRequest = httpClient
                 .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                .orTimeout(250, TimeUnit.MILLISECONDS)
+                .orTimeout(250, TimeUnit.SECONDS)
                 .thenAcceptAsync(
                         response -> {
                             try {
@@ -131,21 +136,35 @@ class MyCustomNameResolver extends NameResolver {
     }
 
     @Override
-    public void start(Listener listener) {
-        resolve();
-        pendingRequest.join();
-        if (knownServers.isEmpty()) {
-            throw new ConnectionPendingException();
-        }
-    }
-
-    @Override
     public void start(Listener2 listener) {
         resolve();
-        pendingRequest.join();
-        if (knownServers.isEmpty()) {
-            throw new ConnectionPendingException();
-        }
+        executor.execute(
+                () -> {
+                    try {
+                        if (knownServers.isEmpty()) {
+                            if (!pendingRequest.isDone() || pendingRequest.isCompletedExceptionally()) {
+                                pendingRequest.join();
+                            }
+                            if (knownServers.isEmpty()) {
+                                throw new ConnectionPendingException();
+                            }
+                        }
+                        List<EquivalentAddressGroup> addresses = knownServers
+                                .stream()
+                                .map(server -> new InetSocketAddress(server.host, server.port))
+                                .map(EquivalentAddressGroup::new)
+                                .collect(Collectors.toList());
+
+                        listener.onResult(
+                                ResolutionResult.newBuilder()
+                                        .setAddresses(addresses)
+                                        .build()
+                        );
+                    } catch (Exception e) {
+                        listener.onError(Status.UNAVAILABLE.withCause(e));
+                    }
+                }
+        );
     }
 
     @Override

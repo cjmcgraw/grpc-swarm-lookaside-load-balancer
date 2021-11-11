@@ -1,11 +1,10 @@
 package github.cjmcgraw.dnstester;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import github.cjmcgraw.dnstester.nameresolvers.MyCustomNameResolverProvider;
 import io.grpc.*;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 
 import github.cjmcgraw.dnstester.TestServerGrpc;
@@ -14,6 +13,8 @@ import org.apache.logging.log4j.Logger;
 
 public class DnsTesterClient {
   private static final Logger log = LogManager.getLogger(DnsTesterClient.class);
+  private static final ExecutorService mainExecutor = Executors.newCachedThreadPool();
+  private static final ExecutorService offloadExecutor = Executors.newFixedThreadPool(10);
   public static void main(String[] args) throws Exception {
     log.error("Starting script");
     NameResolverRegistry
@@ -23,6 +24,8 @@ public class DnsTesterClient {
     ManagedChannel channel = ManagedChannelBuilder
         .forTarget("my-custom://localhost")
         .defaultLoadBalancingPolicy("round_robin")
+        .executor(mainExecutor)
+        .offloadExecutor(offloadExecutor)
         .usePlaintext()
         .build();
 
@@ -34,6 +37,8 @@ public class DnsTesterClient {
       }
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      mainExecutor.shutdownNow();
+      offloadExecutor.shutdownNow();
     }
     log.info("Finished script");
   }
@@ -45,11 +50,12 @@ public class DnsTesterClient {
     public DnsTester(ManagedChannel channel) {
       this.channel = channel;
       this.stub = TestServerGrpc
-              .newBlockingStub(channel);
+              .newBlockingStub(channel)
+              .withWaitForReady();
       this.callerId = "123";
     }
 
-    public String call(String callerName) {
+    public String call(String callerName) throws InterruptedException {
       long start = System.nanoTime();
       CallRequest request = CallRequest.newBuilder()
               .setCallerId("123")
@@ -63,7 +69,8 @@ public class DnsTesterClient {
         log.info("request took " + (end - start) * 1e-6 + " ms");
         return output;
       } catch (Exception e) {
-        return null;
+        log.error(e);
+        return "";
       }
     }
   }
