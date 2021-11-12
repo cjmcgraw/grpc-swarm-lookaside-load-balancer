@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UnknownFormatConversionException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,7 +52,7 @@ public class HttpRequestNameResolver extends NameResolver {
         httpClient = HttpClient
                 .newBuilder()
                 .executor(executor)
-                //.connectTimeout(HTTP_TIMEOUT)
+                .connectTimeout(HTTP_TIMEOUT)
                 .build();
 
         httpRequest = HttpRequest
@@ -131,7 +132,7 @@ public class HttpRequestNameResolver extends NameResolver {
         shouldClearCacheWhenAvailable = false;
         pendingRequest = httpClient
                 .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                //.orTimeout(250, TimeUnit.MILLISECONDS)
+                .orTimeout(250, TimeUnit.MILLISECONDS)
                 .thenAcceptAsync(
                         response -> {
                             try {
