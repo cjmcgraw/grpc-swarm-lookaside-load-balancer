@@ -36,6 +36,16 @@ services:
       - ./lookaside-load-balancer/nginx.conf:/etc/nginx/nginx.conf
 
 
+  grpcurl:
+    image: fullstorydev/grpcurl
+    profiles: ["docker-compose-run-only"]
+
+  tests:
+    build: ./tests
+    profiles: ["docker-compose-run-only"]
+    
+
+
   client:
     build:
       context: ./
