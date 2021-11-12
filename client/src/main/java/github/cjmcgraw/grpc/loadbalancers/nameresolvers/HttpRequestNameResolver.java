@@ -5,7 +5,6 @@ import io.grpc.NameResolver;
 import io.grpc.Status;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Scheduled;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -20,8 +19,7 @@ import java.util.stream.Collectors;
 
 public class HttpRequestNameResolver extends NameResolver {
     private static final Logger log = LogManager.getLogger(HttpRequestNameResolver.class);
-    private static final Logger refreshLoopLog = LogManager.getLogger("refresh-loop");
-    private static final Duration REFRESH_TIME = Duration.ofSeconds(30);
+    private static final Duration REFRESH_TIME = Duration.ofMinutes(5);
     private static final Duration MAX_WAIT_FOR_COMPLETION_TIME = Duration.ofSeconds(1);
     private static final Duration HTTP_TIMEOUT = Duration.ofMillis(100);
     private final HttpClient httpClient;
