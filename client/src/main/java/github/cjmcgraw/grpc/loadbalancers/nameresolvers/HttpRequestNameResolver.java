@@ -1,34 +1,27 @@
-package github.cjmcgraw.dnstester.nameresolvers;
+package github.cjmcgraw.grpc.loadbalancers.nameresolvers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import io.grpc.EquivalentAddressGroup;
 import io.grpc.NameResolver;
 import io.grpc.Status;
-import io.grpc.SynchronizationContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Scheduled;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UnknownFormatConversionException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class HttpRequestNameResolver extends NameResolver {
     private static final Logger log = LogManager.getLogger(HttpRequestNameResolver.class);
-    private static final Duration REFRESH_TIME = Duration.ofMinutes(15);
+    private static final Logger refreshLoopLog = LogManager.getLogger("refresh-loop");
+    private static final Duration REFRESH_TIME = Duration.ofSeconds(30);
     private static final Duration MAX_WAIT_FOR_COMPLETION_TIME = Duration.ofSeconds(1);
     private static final Duration HTTP_TIMEOUT = Duration.ofMillis(100);
     private final HttpClient httpClient;
@@ -36,16 +29,18 @@ public class HttpRequestNameResolver extends NameResolver {
     private final Executor executor;
     private final URI target;
 
+    private final ScheduledExecutorService refreshExecutor;
     private final Function<HttpResponse<String>, Set<String>> parseResponse;
     private Set<String> knownTargets;
     private CompletableFuture<Void> pendingRequest;
     private long timeOfLastCache;
     private boolean shouldClearCacheWhenAvailable = false;
+    private Listener2 lastKnownListener;
 
     HttpRequestNameResolver(Executor executor, URI target, Function<HttpResponse<String>, Set<String>> parseResponse) {
         this.parseResponse = parseResponse;
         this.target = target;
-        this.knownTargets= new HashSet<>();
+        this.knownTargets = new HashSet<>();
         this.timeOfLastCache = 0L;
         this.executor = executor;
 
@@ -60,15 +55,24 @@ public class HttpRequestNameResolver extends NameResolver {
                 .GET()
                 .uri(target)
                 .build();
+
+        refreshExecutor = Executors.newSingleThreadScheduledExecutor();
+        refreshExecutor.scheduleAtFixedRate(
+                this::refresh,
+                REFRESH_TIME.toMillis(),
+                REFRESH_TIME.toMillis(),
+                TimeUnit.MILLISECONDS
+        );
     }
 
     @Override
     public void start(NameResolver.Listener2 listener) {
         resolve();
+        this.lastKnownListener = listener;
         executor.execute(
                 () -> {
                     try {
-                        log.warn("NameResolver: attempting new listener with known targets size=" + knownTargets.size());
+                        log.error("NameResolver: attempting new listener with known targets size=" + knownTargets.size());
                         if (knownTargets.isEmpty()) {
                             if (pendingRequest != null && (!pendingRequest.isDone()
                                     || pendingRequest.isCompletedExceptionally())) {
@@ -91,7 +95,7 @@ public class HttpRequestNameResolver extends NameResolver {
                                         .setAddresses(addresses)
                                         .build()
                         );
-                        log.warn("NameResolver: Successfully updated listener");
+                        log.error("NameResolver: Successfully updated listener");
                     } catch (Exception e) {
                         log.error("NameResolver: exception when building out for known targets!");
                         log.error(e);
@@ -107,13 +111,16 @@ public class HttpRequestNameResolver extends NameResolver {
 
     @Override
     public void refresh() {
-        // probably resolve again?
+        shouldClearCacheWhenAvailable = true;
         resolve();
+        if (lastKnownListener != null) {
+            start(lastKnownListener);
+        }
     }
 
     @Override
     public void shutdown() {
-        // ??
+        refreshExecutor.shutdownNow();
     }
 
     @Override
@@ -126,7 +133,7 @@ public class HttpRequestNameResolver extends NameResolver {
         if (!shouldAttemptResolution()) {
             return;
         }
-        log.warn("NameResolver resolve triggered!");
+        log.error("NameResolver resolve triggered!");
         Executor selectedExecutor = executor;
         timeOfLastCache = System.currentTimeMillis();
         shouldClearCacheWhenAvailable = false;
@@ -160,7 +167,7 @@ public class HttpRequestNameResolver extends NameResolver {
         }
         String addr = strs[0];
         int port = Integer.parseInt(strs[1]);
-        log.warn("creating new connection for " + target);
+        log.error("creating new connection for " + target);
         return new InetSocketAddress(addr, port);
     }
 
