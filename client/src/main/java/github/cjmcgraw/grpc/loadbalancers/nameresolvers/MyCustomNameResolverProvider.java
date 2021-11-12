@@ -1,4 +1,4 @@
-package github.cjmcgraw.dnstester.nameresolvers;
+package github.cjmcgraw.grpc.loadbalancers.nameresolvers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;

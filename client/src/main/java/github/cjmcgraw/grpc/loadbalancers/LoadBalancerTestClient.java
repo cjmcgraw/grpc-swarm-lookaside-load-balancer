@@ -1,18 +1,15 @@
-package github.cjmcgraw.dnstester;
+package github.cjmcgraw.grpc.loadbalancers;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import github.cjmcgraw.dnstester.nameresolvers.MyCustomNameResolverProvider;
+import github.cjmcgraw.grpc.loadbalancers.nameresolvers.MyCustomNameResolverProvider;
 import io.grpc.*;
 
 import java.util.concurrent.*;
-import java.util.logging.Level;
-
-import github.cjmcgraw.dnstester.TestServerGrpc;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DnsTesterClient {
-  private static final Logger log = LogManager.getLogger(DnsTesterClient.class);
+public class LoadBalancerTestClient {
+  private static final Logger log = LogManager.getLogger(LoadBalancerTestClient.class);
   private static final ExecutorService mainExecutor = Executors.newFixedThreadPool(10);
   private static final ExecutorService offloadExecutor = Executors.newFixedThreadPool(50);
   public static void main(String[] args) throws Exception {
@@ -27,17 +24,18 @@ public class DnsTesterClient {
             .defaultLoadBalancingPolicy("round_robin")
             .executor(mainExecutor)
             .offloadExecutor(offloadExecutor)
+            .keepAliveTime(30, TimeUnit.SECONDS)
             .usePlaintext()
             .build();
 
-    DnsTester dnsTester = new DnsTester(channel);
+    CallHelper helper = new CallHelper(channel);
     try {
-      String response = dnsTester.call("request - initial");
-      for (int j = 0; j < 15; j++ ) {
-        for (int i = 0; i < 15; i++) {
-          response = dnsTester.call("request - " + i);
+      String response = helper.call("request - initial");
+      for (int j = 0; j < 10000; j++ ) {
+        for (int i = 0; i < 20; i++) {
+          response = helper.call("request - " + j + "," + i);
         }
-        Thread.sleep(500);
+        Thread.sleep(5000);
       }
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -49,16 +47,17 @@ public class DnsTesterClient {
     log.info("Finished script");
   }
 
-  public static class DnsTester {
+  public static class CallHelper {
     private final ManagedChannel channel;
     private final TestServerGrpc.TestServerFutureStub stub;
     private final String callerId;
-    public DnsTester(ManagedChannel channel) {
+    public CallHelper(ManagedChannel channel) {
       this.channel = channel;
       this.stub = TestServerGrpc
               .newFutureStub(channel);
-              //.withDeadlineAfter(10, TimeUnit.SECONDS);
+              //.withDeadlineAfter(200, TimeUnit.MILLISECONDS);
       this.callerId = "123";
+
     }
 
     public String call(String callerName) throws InterruptedException {
@@ -73,7 +72,7 @@ public class DnsTesterClient {
         ListenableFuture<CallResponse> futResponse = stub
                 .callServer(request);
 
-        CallResponse response = futResponse.get(200L, TimeUnit.MILLISECONDS);
+        CallResponse response = futResponse.get(50L, TimeUnit.MILLISECONDS);
         String output = response.getMessage();
         long end = System.nanoTime();
         log.error("request took " + (end - start) * 1e-6 + " ms");
