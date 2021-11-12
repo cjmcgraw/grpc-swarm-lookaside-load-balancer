@@ -11,6 +11,8 @@ import java.util.concurrent.Executor;
 
 
 public class MyCustomNameResolverProvider extends NameResolverProvider {
+    private static Executor mainExecutor;
+    private static Executor offloadExecutor;
     private static final Logger log = LogManager.getLogger(MyCustomNameResolverProvider.class);
     public static final String SCHEME = "my-custom";
 

@@ -38,8 +38,8 @@ public class DnsTesterClient {
       }
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-      mainExecutor.shutdownNow();
-      offloadExecutor.shutdownNow();
+      mainExecutor.awaitTermination(5, TimeUnit.SECONDS);
+      offloadExecutor.awaitTermination(5, TimeUnit.SECONDS);
     }
     log.info("Finished script");
   }

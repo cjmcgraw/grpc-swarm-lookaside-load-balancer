@@ -33,20 +33,6 @@ import java.util.stream.Collectors;
 class MyCustomNameResolver extends NameResolver {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    static class ValidServer {
-        @JsonProperty("name")
-        private String name;
-        @JsonProperty("host")
-        private String host;
-        @JsonProperty("port")
-        private int port;
-    }
-
-    static class LookasideResponse {
-        @JsonProperty("valid_servers")
-       private Set<ValidServer> validServers;
-    }
-
     private static final Logger log = LogManager.getLogger(MyCustomNameResolver.class);
     private static final Duration REFRESH_TIME = Duration.ofMinutes(15);
     private static final Duration MAX_WAIT_FOR_COMPLETION_TIME = Duration.ofSeconds(5);
@@ -84,6 +70,56 @@ class MyCustomNameResolver extends NameResolver {
                 .GET()
                 .uri(target)
                 .build();
+    }
+
+    @Override
+    public void start(Listener2 listener) {
+        resolve();
+        executor.execute(
+                () -> {
+                    try {
+                        if (knownServers.isEmpty()) {
+                            if (!pendingRequest.isDone() || pendingRequest.isCompletedExceptionally()) {
+                                pendingRequest.join();
+                            }
+                            if (knownServers.isEmpty()) {
+                                throw new ConnectionPendingException();
+                            }
+                        }
+                        List<EquivalentAddressGroup> addresses = knownServers
+                                .stream()
+                                .map(server -> new InetSocketAddress(server.host, server.port))
+                                .map(EquivalentAddressGroup::new)
+                                .collect(Collectors.toList());
+
+                        listener.onResult(
+                                ResolutionResult.newBuilder()
+                                        .setAddresses(addresses)
+                                        .build()
+                        );
+                    } catch (Exception e) {
+                        listener.onError(Status.UNAVAILABLE.withCause(e));
+                        throw e;
+                    }
+                }
+        );
+    }
+
+    @Override
+    public void refresh() {
+        // probably resolve again?
+        resolve();
+    }
+
+    @Override
+    public void shutdown() {
+        // ??
+    }
+
+    @Override
+    public String getServiceAuthority() {
+        // lol what does this do?
+        return target.getAuthority();
     }
 
     public void resolve() {
@@ -129,51 +165,17 @@ class MyCustomNameResolver extends NameResolver {
     }
 
 
-
-    @Override
-    public String getServiceAuthority() {
-        return target.getAuthority();
+    static class ValidServer {
+        @JsonProperty("name")
+        private String name;
+        @JsonProperty("host")
+        private String host;
+        @JsonProperty("port")
+        private int port;
     }
 
-    @Override
-    public void start(Listener2 listener) {
-        resolve();
-        executor.execute(
-                () -> {
-                    try {
-                        if (knownServers.isEmpty()) {
-                            if (!pendingRequest.isDone() || pendingRequest.isCompletedExceptionally()) {
-                                pendingRequest.join();
-                            }
-                            if (knownServers.isEmpty()) {
-                                throw new ConnectionPendingException();
-                            }
-                        }
-                        List<EquivalentAddressGroup> addresses = knownServers
-                                .stream()
-                                .map(server -> new InetSocketAddress(server.host, server.port))
-                                .map(EquivalentAddressGroup::new)
-                                .collect(Collectors.toList());
-
-                        listener.onResult(
-                                ResolutionResult.newBuilder()
-                                        .setAddresses(addresses)
-                                        .build()
-                        );
-                    } catch (Exception e) {
-                        listener.onError(Status.UNAVAILABLE.withCause(e));
-                    }
-                }
-        );
-    }
-
-    @Override
-    public void refresh() {
-        resolve();
-    }
-
-    @Override
-    public void shutdown() {
-
+    static class LookasideResponse {
+        @JsonProperty("valid_servers")
+        private Set<ValidServer> validServers;
     }
 }
