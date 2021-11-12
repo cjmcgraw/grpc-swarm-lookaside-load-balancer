@@ -1,4 +1,4 @@
-version: "3.2"
+version: "3.9"
 
 services:
 
@@ -40,13 +40,8 @@ services:
     image: fullstorydev/grpcurl
     profiles: ["docker-compose-run-only"]
 
-  tests:
-    build: ./tests
-    profiles: ["docker-compose-run-only"]
-    
-
-
   client:
+    profiles: ["docker-compose-run-only"]
     build:
       context: ./
       dockerfile: ./client/Dockerfile
