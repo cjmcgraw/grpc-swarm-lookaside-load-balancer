@@ -1,7 +1,10 @@
-package github.cjmcgraw.grpc.loadbalancers;
+package github.cjmcgraw.grpclb;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import github.cjmcgraw.grpc.loadbalancers.nameresolvers.MyCustomNameResolverProvider;
+import github.cjmcgraw.grpclb.nameresolvers.MyCustomNameResolverProvider;
+import github.cjmcgraw.grpclb.test.CallRequest;
+import github.cjmcgraw.grpclb.test.CallResponse;
+import github.cjmcgraw.grpclb.test.TestServerGrpc;
 import io.grpc.*;
 
 import java.util.concurrent.*;

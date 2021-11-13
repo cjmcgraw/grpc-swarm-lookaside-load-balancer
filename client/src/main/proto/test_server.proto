@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "github.cjmcgraw.dnstester";
+option java_package = "github.cjmcgraw.grpclb.test";
 option java_outer_classname = "TestServerProto";
 
 package test_server;

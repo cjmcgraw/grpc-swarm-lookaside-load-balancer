@@ -1,4 +1,4 @@
-package github.cjmcgraw.grpc.loadbalancers.nameresolvers;
+package github.cjmcgraw.grpclb.nameresolvers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -48,7 +49,9 @@ public class MyCustomNameResolverProvider extends NameResolverProvider {
         return new HttpRequestNameResolver(
                 args.getOffloadExecutor(),
                 actualUri,
-                this::processResponseIntoTargets
+                this::processResponseIntoTargets,
+                Duration.ofSeconds(30),
+                Duration.ofMillis(250)
         );
     }
 
