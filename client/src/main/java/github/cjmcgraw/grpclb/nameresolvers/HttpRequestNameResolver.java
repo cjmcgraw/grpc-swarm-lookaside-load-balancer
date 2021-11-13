@@ -1,4 +1,4 @@
-package github.cjmcgraw.grpc.loadbalancers.nameresolvers;
+package github.cjmcgraw.grpclb.nameresolvers;
 
 import io.grpc.EquivalentAddressGroup;
 import io.grpc.NameResolver;
@@ -19,23 +19,33 @@ import java.util.stream.Collectors;
 
 public class HttpRequestNameResolver extends NameResolver {
     private static final Logger log = LogManager.getLogger(HttpRequestNameResolver.class);
-    private static final Duration REFRESH_TIME = Duration.ofMinutes(5);
-    private static final Duration MAX_WAIT_FOR_COMPLETION_TIME = Duration.ofSeconds(1);
-    private static final Duration HTTP_TIMEOUT = Duration.ofMillis(100);
+    private static final Duration MAX_WAIT_FOR_COMPLETION_TIME = Duration.ofSeconds(2);
+
+    private final Function<HttpResponse<String>, Set<String>> parseResponse;
+    private final Duration refreshTime;
+    private final Duration httpTimeout;
+
     private final HttpClient httpClient;
     private final HttpRequest httpRequest;
     private final Executor executor;
     private final URI target;
 
-    private final ScheduledExecutorService refreshExecutor;
-    private final Function<HttpResponse<String>, Set<String>> parseResponse;
+    private ScheduledExecutorService refreshExecutor;
     private Set<String> knownTargets;
     private CompletableFuture<Void> pendingRequest;
     private long timeOfLastCache;
     private boolean shouldClearCacheWhenAvailable = false;
     private Listener2 lastKnownListener;
 
-    HttpRequestNameResolver(Executor executor, URI target, Function<HttpResponse<String>, Set<String>> parseResponse) {
+    HttpRequestNameResolver(
+            Executor executor,
+            URI target,
+            Function<HttpResponse<String>, Set<String>> parseResponse,
+            Duration refreshTime,
+            Duration httpTimeout
+    ) {
+        this.refreshTime = refreshTime;
+        this.httpTimeout = httpTimeout;
         this.parseResponse = parseResponse;
         this.target = target;
         this.knownTargets = new HashSet<>();
@@ -45,7 +55,7 @@ public class HttpRequestNameResolver extends NameResolver {
         httpClient = HttpClient
                 .newBuilder()
                 .executor(executor)
-                .connectTimeout(HTTP_TIMEOUT)
+                .connectTimeout(httpTimeout)
                 .build();
 
         httpRequest = HttpRequest
@@ -54,13 +64,15 @@ public class HttpRequestNameResolver extends NameResolver {
                 .uri(target)
                 .build();
 
-        refreshExecutor = Executors.newSingleThreadScheduledExecutor();
-        refreshExecutor.scheduleAtFixedRate(
-                this::refresh,
-                REFRESH_TIME.toMillis(),
-                REFRESH_TIME.toMillis(),
-                TimeUnit.MILLISECONDS
-        );
+        if (refreshTime.toMillis() > 0) {
+            refreshExecutor = Executors.newSingleThreadScheduledExecutor();
+            refreshExecutor.scheduleAtFixedRate(
+                    this::refresh,
+                    refreshTime.toMillis(),
+                    refreshTime.toMillis(),
+                    TimeUnit.MILLISECONDS
+            );
+        }
     }
 
     @Override
@@ -118,12 +130,13 @@ public class HttpRequestNameResolver extends NameResolver {
 
     @Override
     public void shutdown() {
-        refreshExecutor.shutdownNow();
+        if (refreshExecutor != null && !refreshExecutor.isShutdown()) {
+            refreshExecutor.shutdownNow();
+        }
     }
 
     @Override
     public String getServiceAuthority() {
-        // lol what does this do?
         return target.getAuthority();
     }
 
@@ -137,7 +150,7 @@ public class HttpRequestNameResolver extends NameResolver {
         shouldClearCacheWhenAvailable = false;
         pendingRequest = httpClient
                 .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                .orTimeout(250, TimeUnit.MILLISECONDS)
+                .orTimeout(refreshTime.toMillis(), TimeUnit.MILLISECONDS)
                 .thenAcceptAsync(
                         response -> {
                             try {
@@ -182,7 +195,7 @@ public class HttpRequestNameResolver extends NameResolver {
             }
         }
 
-        if (timeSinceLastUpdate > REFRESH_TIME.toMillis()) {
+        if (timeSinceLastUpdate > refreshTime.toMillis()) {
             return true;
         }
 
