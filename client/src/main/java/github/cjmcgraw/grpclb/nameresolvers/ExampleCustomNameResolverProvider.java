@@ -16,21 +16,20 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 
-public class MyCustomNameResolverProvider extends NameResolverProvider {
-    private static final Logger log = LogManager.getLogger(MyCustomNameResolverProvider.class);
+public class ExampleCustomNameResolverProvider extends NameResolverProvider {
+    private static final Logger log = LogManager.getLogger(ExampleCustomNameResolverProvider.class);
     private static final Logger httpResponseLog = LogManager.getLogger("HttpResponseProcessor");
     private static final ObjectMapper mapper = new ObjectMapper();
-    public static final String SCHEME = "my-custom";
+    public static final String SCHEME = "example-custom";
 
     @Override
     protected boolean isAvailable() {
-        log.error("checking isAvailable");
         return true;
     }
 
     @Override
     protected int priority() {
-        return 0;
+        return 5;
     }
 
     @Override
@@ -57,7 +56,6 @@ public class MyCustomNameResolverProvider extends NameResolverProvider {
 
     @Override
     public String getDefaultScheme() {
-        log.error("getting scheme");
         return SCHEME;
     }
 

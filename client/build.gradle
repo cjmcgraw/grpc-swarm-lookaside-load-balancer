@@ -3,10 +3,23 @@ plugins {
     id 'com.google.protobuf' version '0.8.17'
     id 'idea'
     id 'java'
+    id 'java-library'
+    id 'maven-publish'
 }
 
 application {
     mainClass.set("github.cjmcgraw.grpclb.LoadBalancerTestClient")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = "github.cjmcgraw"
+            artifactId = "grpclb-http"
+            version = "0-1.SNAPSHOT"
+            from components.java
+        }
+    }
 }
 
 repositories {
@@ -16,8 +29,8 @@ repositories {
     mavenLocal()
 }
 
-sourceCompatibility = 17
-targetCompatibility = 17
+sourceCompatibility = 14
+targetCompatibility = 14
 
 def grpcVersion = '1.42.0' // CURRENT_GRPC_VERSION
 def protobufVersion = '3.19.1'

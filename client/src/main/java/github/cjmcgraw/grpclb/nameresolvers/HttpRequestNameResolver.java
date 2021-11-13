@@ -82,7 +82,7 @@ public class HttpRequestNameResolver extends NameResolver {
         executor.execute(
                 () -> {
                     try {
-                        log.error("NameResolver: attempting new listener with known targets size=" + knownTargets.size());
+                        log.info("NameResolver: attempting new listener with known targets size=" + knownTargets.size());
                         if (knownTargets.isEmpty()) {
                             if (pendingRequest != null && (!pendingRequest.isDone()
                                     || pendingRequest.isCompletedExceptionally())) {
@@ -105,7 +105,7 @@ public class HttpRequestNameResolver extends NameResolver {
                                         .setAddresses(addresses)
                                         .build()
                         );
-                        log.error("NameResolver: Successfully updated listener");
+                        log.info("NameResolver: Successfully updated listener");
                     } catch (Exception e) {
                         log.error("NameResolver: exception when building out for known targets!");
                         log.error(e);
@@ -144,13 +144,13 @@ public class HttpRequestNameResolver extends NameResolver {
         if (!shouldAttemptResolution()) {
             return;
         }
-        log.error("NameResolver resolve triggered!");
+        log.info("NameResolver resolve triggered!");
         Executor selectedExecutor = executor;
         timeOfLastCache = System.currentTimeMillis();
         shouldClearCacheWhenAvailable = false;
         pendingRequest = httpClient
                 .sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString())
-                .orTimeout(refreshTime.toMillis(), TimeUnit.MILLISECONDS)
+                .orTimeout(httpTimeout.toMillis(), TimeUnit.MILLISECONDS)
                 .thenAcceptAsync(
                         response -> {
                             try {
@@ -178,7 +178,7 @@ public class HttpRequestNameResolver extends NameResolver {
         }
         String addr = strs[0];
         int port = Integer.parseInt(strs[1]);
-        log.error("creating new connection for " + target);
+        log.info("creating new connection for " + target);
         return new InetSocketAddress(addr, port);
     }
 
