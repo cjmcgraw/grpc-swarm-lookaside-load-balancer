@@ -28,6 +28,8 @@ public class LoadBalancerTestClient {
             .executor(mainExecutor)
             .offloadExecutor(offloadExecutor)
             .keepAliveTime(30, TimeUnit.SECONDS)
+            .keepAliveTimeout(100, TimeUnit.MILLISECONDS)
+            .keepAliveWithoutCalls(false)
             .usePlaintext()
             .build();
 
@@ -58,7 +60,6 @@ public class LoadBalancerTestClient {
       this.channel = channel;
       this.stub = TestServerGrpc
               .newFutureStub(channel);
-              //.withDeadlineAfter(200, TimeUnit.MILLISECONDS);
       this.callerId = "123";
 
     }
@@ -73,6 +74,7 @@ public class LoadBalancerTestClient {
 
       try {
         ListenableFuture<CallResponse> futResponse = stub
+                .withDeadlineAfter(100, TimeUnit.MILLISECONDS)
                 .callServer(request);
 
         CallResponse response = futResponse.get(50L, TimeUnit.MILLISECONDS);

@@ -140,7 +140,7 @@ public class HttpRequestNameResolver extends NameResolver {
         return target.getAuthority();
     }
 
-    public void resolve() {
+    private void resolve() {
         if (!shouldAttemptResolution()) {
             return;
         }
