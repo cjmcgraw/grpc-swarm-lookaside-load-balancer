@@ -36,11 +36,11 @@ public class LoadBalancerTestClient {
     CallHelper helper = new CallHelper(channel);
     try {
       helper.call("request - initial");
-      for (int j = 0; j < 10000; j++ ) {
+      for (int j = 0; j < 10_000; j++ ) {
         for (int i = 0; i < 20; i++) {
           helper.call("request - " + j + "," + i);
         }
-        Thread.sleep(5000);
+        Thread.sleep(100);
       }
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);

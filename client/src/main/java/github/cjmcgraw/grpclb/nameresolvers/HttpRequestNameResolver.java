@@ -144,8 +144,7 @@ public class HttpRequestNameResolver extends NameResolver {
         if (!shouldAttemptResolution()) {
             return;
         }
-        log.info("NameResolver resolve triggered!");
-        Executor selectedExecutor = executor;
+        log.warn("NameResolver resolve triggered!");
         timeOfLastCache = System.currentTimeMillis();
         shouldClearCacheWhenAvailable = false;
         pendingRequest = httpClient
@@ -165,7 +164,7 @@ public class HttpRequestNameResolver extends NameResolver {
                             }
 
                         },
-                        selectedExecutor
+                        executor
                 );
     }
 
